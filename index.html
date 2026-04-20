@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drug Response Prediction</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f3f4f6;
+            --text-color: #1f2937;
+            --card-bg: #ffffff;
+            --border-color: #d1d5db;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            margin: 0 0 10px 0;
+            color: var(--primary-color);
+            font-size: 28px;
+        }
+
+        .header p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input, 
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-family: monospace; /* Monospace is good for SMILES and Arrays */
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, 
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-group .help-text {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 6px;
+            display: block;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .result-container {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #eff6ff;
+            border: 1px solid #bfdbfe;
+            text-align: center;
+            display: none; /* Hidden by default */
+        }
+
+        .result-container.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        .result-label {
+            font-size: 14px;
+            color: #1e3a8a;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Therapeutic Response Predictor</h1>
+            <p>Input compound and cell line profile to predict drug sensitivity level.</p>
+        </div>
+
+        <form id="predictionForm">
+            <div class="form-group">
+                <label for="drugInput">Drug (SMILES Representation)</label>
+                <input type="text" id="drugInput" placeholder="e.g. COCCOC1=C(C=C2C(=C1)C(=NC=N2)..." required>
+                <span class="help-text">Enter the molecular structure as a valid SMILES string.</span>
+            </div>
+
+            <div class="form-group">
+                <label for="cellLineInput">Cell Line (Feature Vector)</label>
+                <textarea id="cellLineInput" rows="4" placeholder="e.g. [3.23827, 2.98225, 10.23549, ...]" required></textarea>
+                <span class="help-text">Enter the numerical array of the cell line features.</span>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn">Predict Drug Sensitivity Level</button>
+        </form>
+
+        <div class="result-container" id="resultBox">
+            <div class="result-label">Predicted Sensitivity Level</div>
+            <div class="result-value" id="sensitivityValue">--</div>
+        </div>
+    </div>
+
+    <script>
+    document.getElementById('predictionForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent page reload
+
+        // 1. Grab values from the inputs
+        const drug = document.getElementById('drugInput').value;
+        const cellLine = document.getElementById('cellLineInput').value;
+        const btn = document.getElementById('submitBtn');
+
+        // 2. Change button state to show loading
+        btn.textContent = 'Processing...';
+        btn.style.opacity = '0.7';
+
+        // 3. Send data to Flask Backend
+        fetch('/predict', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ drug: drug, cell_line: cellLine })
+        })
+        .then(response => response.json())
+        .then(data => { 
+            // Reset button
+            btn.textContent = 'Predict Drug Sensitivity Level';
+            btn.style.opacity = '1';
+
+            if (data.error) {
+                alert("Error: " + data.error);
+                return;
+            }
+
+            // Show results
+            // Formatting output to 6 decimal places to match your initial mockup
+            document.getElementById('sensitivityValue').textContent = data.sensitivity.toFixed(6);
+            document.getElementById('resultBox').classList.add('active');
+        })
+        .catch(err => {
+            console.error("Fetch Error:", err);
+            alert("A network error occurred while communicating with the server.");
+            
+            // Reset button
+            btn.textContent = 'Predict Drug Sensitivity Level';
+            btn.style.opacity = '1';
+        });
+    });
+</script>
+
+</body>
+</html>
