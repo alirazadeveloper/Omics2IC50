@@ -33,7 +33,3 @@ my_project/
 ├── rf_model.pkl            # The saved Random Forest model
 └── templates/
     └── index.html          # The frontend UI (HTML/CSS/JS)
-
-
-
-![App UI Screenshot]([https://example.com/images/screenshot.png](https://raw.githubusercontent.com/alirazadeveloper/Omics2IC50/refs/heads/main/app1.png))
