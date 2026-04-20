@@ -34,4 +34,4 @@ my_project/
 └── templates/
     └── index.html          # The frontend UI (HTML/CSS/JS)
 
-![App UI Screenshot](app1.png)
+![App UI Screenshot]([app1.png](https://github.com/alirazadeveloper/Omics2IC50/blob/main/app1.png?raw=true))
